@@ -1,6 +1,14 @@
 [
   {
-    "id": "now-qa",
+    "title": "Business Operations Manager (Prospect)",
+    "company": "Nextbike",
+    "location": "Mulhouse (Remote/Travel)",
+    "start": "2025-05",
+    "end": null,
+    "summary": "SOP rollout · MRE collaboration · e-station installs · QlikSense reporting.",
+    "tags": ["Operations", "SOP", "Data"]
+  },
+  {
     "title": "Test Engineer (QA)",
     "company": "Sopra Steria (Consultant)",
     "location": "Brussels, BE",
@@ -10,7 +18,6 @@
     "tags": ["QA", "Automation", "Agile", "Streaming"]
   },
   {
-    "id": "brussels-dev",
     "title": "Full-stack Developer",
     "company": "Omina / Claude Bernard Univ.",
     "location": "Brussels & Lyon",
@@ -20,7 +27,6 @@
     "tags": ["Python", "Django", "Frontend"]
   },
   {
-    "id": "voi-ops",
     "title": "Vehicle Operations → Repair Partner",
     "company": "VOI Technology",
     "location": "France",
@@ -30,7 +36,6 @@
     "tags": ["Operations", "Logistics", "Partners"]
   },
   {
-    "id": "content-manager",
     "title": "Content Manager",
     "company": "Roskilde Office",
     "location": "Denmark",
@@ -40,7 +45,6 @@
     "tags": ["Content", "Coordination"]
   },
   {
-    "id": "product-assistant",
     "title": "Product Assistant",
     "company": "Nordic Project (Finland/DK)",
     "location": "Nordics",
@@ -50,7 +54,6 @@
     "tags": ["Products", "Excel", "Ops"]
   },
   {
-    "id": "teacher-jp",
     "title": "English Teacher",
     "company": "Japan (ALT)",
     "location": "Japan",
@@ -60,7 +63,6 @@
     "tags": ["Teaching", "Education"]
   },
   {
-    "id": "mandarin-study",
     "title": "Mandarin Studies",
     "company": "Fudan University",
     "location": "Shanghai, CN",
@@ -68,15 +70,5 @@
     "end": "2014-06",
     "summary": "Intensive Chinese; HSK track.",
     "tags": ["Mandarin", "HSK"]
-  },
-  {
-    "id": "open-ended-role",
-    "title": "Business Operations Manager (Prospect)",
-    "company": "Nextbike",
-    "location": "Mulhouse (Remote/Travel)",
-    "start": "2025-05",
-    "end": null,
-    "summary": "SOP rollout · MRE collaboration · e-station installs · QlikSense reporting.",
-    "tags": ["Operations", "SOP", "Data"]
   }
 ]
