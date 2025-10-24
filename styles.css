@@ -52,7 +52,16 @@ select{
 }
 
 /* Timeline rail */
-#timelineWrap{position:relative;min-height:220vh;padding:20vh 0}
+:root { --headerH: 64px; } /* will be updated by JS to match your real header height */
+
+/* Make room so first revealed card isn’t under the sticky header */
+#timelineWrap {
+  padding-top: calc(20vh + var(--headerH));  /* was just 20vh before */
+  padding-bottom: 20vh;
+}
+
+/* If we programmatically scroll a card into view, keep it clear of the header */
+.entry { scroll-margin-top: calc(var(--headerH) + 12px); }
 #rail{
   position:fixed;left:50%;transform:translateX(-50%);
   top:0;bottom:0;width:4px;border-radius:999px;
