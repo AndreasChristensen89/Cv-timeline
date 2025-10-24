@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Andreas Christensen — CV</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Sticky segmented control -->
+  <header id="topbar" class="elev-2">
+    <div class="container">
+      <div class="segmented" role="tablist" aria-label="Sections">
+        <button id="tab-experience" role="tab" aria-selected="true" class="seg-btn left active">
+          Experience
+        </button>
+        <button id="tab-skills" role="tab" aria-selected="false" class="seg-btn right">
+          Skills
+        </button>
+      </div>
+
+      <div id="controls">
+        <label class="ctrl">
+          Order:
+          <select id="orderSelect" aria-label="Sort order">
+            <option value="desc" selected>Newest → Oldest</option>
+            <option value="asc">Oldest → Newest</option>
+          </select>
+        </label>
+
+        <label class="ctrl">
+          Date Cursor:
+          <output id="cursorOut">—</output>
+        </label>
+      </div>
+    </div>
+  </header>
+
+  <!-- Experience Section -->
+  <main id="experience" aria-labelledby="tab-experience">
+    <div class="container">
+      <div id="timelineWrap">
+        <!-- Timeline rail + date cursor -->
+        <div id="rail">
+          <div id="railFill"></div>
+          <div id="dateCursor" class="elev-3">
+            <span id="cursorBadge">Today</span>
+          </div>
+        </div>
+
+        <!-- Three zones: Past scrolls above, Active stack sticks center, Upcoming scrolls below -->
+        <section id="pastZone" aria-label="Past experience"></section>
+
+        <section id="activeZone" aria-label="Ongoing experience">
+          <div id="activeStack"></div>
+        </section>
+
+        <section id="upcomingZone" aria-label="Future/Upcoming"></section>
+      </div>
+    </div>
+  </main>
+
+  <!-- Skills Section -->
+  <section id="skills" class="hidden" aria-labelledby="tab-skills">
+    <div class="container">
+      <div id="skillsGrid" class="grid"></div>
+    </div>
+  </section>
+
+  <footer class="container">
+    <p>© <span id="year"></span> Andreas Christensen · Built with plain HTML/CSS/JS</p>
+  </footer>
+
+  <script src="script.js" defer></script>
+</body>
+</html>
