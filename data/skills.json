@@ -1,0 +1,22 @@
+[
+  {
+    "title": "Languages",
+    "items": ["English (C2)", "French (B2)", "Mandarin (HSK3–4)", "Danish (Native)"]
+  },
+  {
+    "title": "Ops & QA",
+    "items": ["SOPs", "Issue Mgmt", "ISTQB", "Agile", "Test Automation"]
+  },
+  {
+    "title": "Tech",
+    "items": ["Python", "Django", "HTML/CSS/JS", "Git", "QlikSense (reading)"]
+  },
+  {
+    "title": "Tools",
+    "items": ["Jira", "Confluence", "Postman", "Playwright", "VS Code"]
+  },
+  {
+    "title": "Soft Skills",
+    "items": ["Stakeholder Comms", "Training", "Cross-cultural", "Problem Solving"]
+  }
+]
