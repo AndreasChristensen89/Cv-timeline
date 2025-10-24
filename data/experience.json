@@ -1,0 +1,82 @@
+[
+  {
+    "id": "now-qa",
+    "title": "Test Engineer (QA)",
+    "company": "Sopra Steria (Consultant)",
+    "location": "Brussels, BE",
+    "start": "2023-09",
+    "end": "2025-03",
+    "summary": "Mobile/TV streaming QA · test automation & manual testing · Agile · ISTQB.",
+    "tags": ["QA", "Automation", "Agile", "Streaming"]
+  },
+  {
+    "id": "brussels-dev",
+    "title": "Full-stack Developer",
+    "company": "Omina / Claude Bernard Univ.",
+    "location": "Brussels & Lyon",
+    "start": "2021-06",
+    "end": "2022-04",
+    "summary": "Python/Django front-leaning work; product features & UI integration.",
+    "tags": ["Python", "Django", "Frontend"]
+  },
+  {
+    "id": "voi-ops",
+    "title": "Vehicle Operations → Repair Partner",
+    "company": "VOI Technology",
+    "location": "France",
+    "start": "2019-06",
+    "end": "2020-02",
+    "summary": "Ops performance, partner coordination, issue management.",
+    "tags": ["Operations", "Logistics", "Partners"]
+  },
+  {
+    "id": "content-manager",
+    "title": "Content Manager",
+    "company": "Roskilde Office",
+    "location": "Denmark",
+    "start": "2017-01",
+    "end": "2017-11",
+    "summary": "Content ops, coordination between teams, delivery to deadlines.",
+    "tags": ["Content", "Coordination"]
+  },
+  {
+    "id": "product-assistant",
+    "title": "Product Assistant",
+    "company": "Nordic Project (Finland/DK)",
+    "location": "Nordics",
+    "start": "2016-06",
+    "end": "2016-12",
+    "summary": "Product update project across sites; data clean-up; release support.",
+    "tags": ["Products", "Excel", "Ops"]
+  },
+  {
+    "id": "teacher-jp",
+    "title": "English Teacher",
+    "company": "Japan (ALT)",
+    "location": "Japan",
+    "start": "2015-01",
+    "end": "2015-10",
+    "summary": "Classroom instruction and language coaching.",
+    "tags": ["Teaching", "Education"]
+  },
+  {
+    "id": "mandarin-study",
+    "title": "Mandarin Studies",
+    "company": "Fudan University",
+    "location": "Shanghai, CN",
+    "start": "2013-09",
+    "end": "2014-06",
+    "summary": "Intensive Chinese; HSK track.",
+    "tags": ["Mandarin", "HSK"]
+  },
+  {
+    "id": "open-ended-role",
+    "title": "Business Operations Manager (Prospect)",
+    "company": "Nextbike",
+    "location": "Mulhouse (Remote/Travel)",
+    "start": "2025-05",
+    "end": null,
+    "summary": "SOP rollout · MRE collaboration · e-station installs · QlikSense reporting.",
+    "tags": ["Operations", "SOP", "Data"]
+  }
+]
