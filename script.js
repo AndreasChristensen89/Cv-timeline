@@ -3,8 +3,9 @@ const EXPERIENCE_JSON = "data/experience.json";
 const SKILLS_JSON = "data/skills.json";
 
 /* ===== Settings ===== */
-const TIME_SLOWNESS_EXP = 4; // Bigger = slower time change when scrolling
-const ORDER_DEFAULT = "desc"; // "asc" = oldest→newest, "desc" = newest→oldest
+const TIME_SLOWNESS_EXP = 4;          // Bigger = slower time when scrolling
+const ORDER_DEFAULT = "desc";         // "asc" oldest→newest | "desc" newest→oldest
+const CENTER_ON_FIRST_REVEAL = true;  // Center the card the first time it appears
 
 /* ===== State ===== */
 let entries = [];
@@ -12,6 +13,7 @@ let skills = [];
 let order = ORDER_DEFAULT;
 let minDate, maxDate;
 let lastProgress = 0;
+const revealedOnce = new Set();       // remember which IDs have been revealed at least once
 
 /* ===== Helpers ===== */
 const $  = (s) => document.querySelector(s);
@@ -31,9 +33,10 @@ function byOrder(a, b) {
 function buildTimeline() {
   const zone = $("#timelineZone");
   zone.innerHTML = "";
-  entries.sort(byOrder).forEach((e) => {
+  entries.sort(byOrder).forEach((e, i) => {
     const el = document.createElement("article");
     el.className = "entry";
+    el.dataset.id    = e.id ?? String(i);
     el.dataset.start = e.start || "";
     el.dataset.end   = e.end   || "";
     el.innerHTML = `
@@ -42,6 +45,8 @@ function buildTimeline() {
       <p>${e.summary || ""}</p>
       <div class="tags">${(e.tags || []).map((t) => `<span class="tag">${t}</span>`).join("")}</div>
     `;
+    // Keep previously revealed cards visible after rebuild/sort
+    if (revealedOnce.has(el.dataset.id)) el.classList.add("revealed");
     zone.appendChild(el);
   });
 }
@@ -78,40 +83,57 @@ function currentDateFromScroll() {
   const t0 = minDate.getTime();
   const t1 = maxDate.getTime();
 
-  // 👇 Key change: map scroll direction to selected order
-  // asc:   top=oldest -> bottom=newest (t increases with scroll)
-  // desc:  top=newest -> bottom=oldest (t decreases with scroll)
+  // Map based on selected order
   const t = (order === "asc")
-    ? t0 + prog * (t1 - t0)
-    : t1 - prog * (t1 - t0);
+    ? t0 + prog * (t1 - t0)       // top→bottom = oldest→newest
+    : t1 - prog * (t1 - t0);      // top→bottom = newest→oldest
 
   return new Date(t);
 }
 
 function updateRailUI(date, progress) {
-  $("#cursorOut").textContent = fmt(date);
+  $("#cursorOut").textContent   = fmt(date);
   $("#cursorBadge").textContent = fmt(date);
-
-  // Rail fill should reflect "how far you've gone" in the current order
   const fill = (order === "asc") ? progress : (1 - progress);
   $("#railFill").style.height = (fill * 100).toFixed(1) + "%";
 }
 
-/* ===== Scroll updates (reveal logic depends on order) ===== */
+/* ===== First-reveal centering ===== */
+let centerLock = false; // prevent nested scroll loops
+function centerEntryOnce(el) {
+  if (!CENTER_ON_FIRST_REVEAL) return;
+  if (centerLock) return;
+  centerLock = true;
+  // Use instant jump to avoid long smooth scroll loops; adjust if you want smooth
+  el.scrollIntoView({ block: "center", inline: "nearest", behavior: "instant" });
+  // small async release
+  setTimeout(() => { centerLock = false; }, 120);
+}
+
+/* ===== Scroll updates ===== */
 function updateByDate() {
   const now = currentDateFromScroll();
   updateRailUI(now, lastProgress);
 
   $$("#timelineZone .entry").forEach((el) => {
+    const id    = el.dataset.id;
     const start = parseDate(el.dataset.start);
     if (!start) return;
 
-    // 👇 Key change: reveal condition matches order
-    // asc: reveal once cursor >= start (moving forward in time)
-    // desc: reveal once cursor <= start (moving backward in time)
+    // Reveal condition matches the chosen order
     const shouldReveal = (order === "asc") ? (now >= start) : (now <= start);
-    if (shouldReveal) el.classList.add("revealed");
-    else el.classList.remove("revealed");
+
+    if (shouldReveal && !revealedOnce.has(id)) {
+      revealedOnce.add(id);           // mark permanently revealed
+      el.classList.add("revealed");   // make visible (and stays visible forever)
+      centerEntryOnce(el);            // center it the first time it appears
+    } else if (revealedOnce.has(id)) {
+      // Never hide again once revealed
+      el.classList.add("revealed");
+    } else {
+      // Not yet revealed → keep hidden
+      el.classList.remove("revealed");
+    }
   });
 }
 
@@ -149,9 +171,17 @@ function setTab(tab) {
   }
 }
 
+/* ===== Header height → CSS var (avoid being hidden under header) ===== */
+function setHeaderHeightVar() {
+  const h = $("#topbar")?.offsetHeight || 0;
+  document.documentElement.style.setProperty("--headerH", `${h}px`);
+}
+
 /* ===== Boot ===== */
 async function boot() {
   $("#year").textContent = new Date().getFullYear();
+  setHeaderHeightVar();
+  window.addEventListener("resize", setHeaderHeightVar);
 
   try {
     const [expRes, sklRes] = await Promise.all([
@@ -178,9 +208,8 @@ async function boot() {
     $("#orderSelect").value = order;
     $("#orderSelect").addEventListener("change", (e) => {
       order = e.target.value;
-      // rebuild in new order and immediately recompute mapping
-      buildTimeline();
-      updateByDate();
+      buildTimeline();   // keep previously revealed visible
+      updateByDate();    // recompute mapping for new order
     });
 
     $("#tab-experience").addEventListener("click", () => setTab("experience"));
