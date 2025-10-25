@@ -38,13 +38,15 @@
   <main id="experience">
     <div class="container">
       <div id="timelineWrap">
-        <div id="rail">
+        <!-- Central rail + dynamic fill + floating badge -->
+        <div id="rail" aria-hidden="true">
           <div id="railFill"></div>
           <div id="dateCursor" class="elev-3">
             <span id="cursorBadge">Today</span>
           </div>
         </div>
 
+        <!-- Stable, always-visible entries -->
         <section id="timelineZone" aria-label="Experience timeline">
           <!-- JS inserts cards here -->
         </section>
