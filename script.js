@@ -2,10 +2,11 @@
 const EXPERIENCE_JSON = "data/experience.json";
 const SKILLS_JSON = "data/skills.json";
 
-/* ===== Settings ===== */
-const TIME_SLOWNESS_EXP = 4;          // Bigger = slower time when scrolling
-const ORDER_DEFAULT = "desc";         // "asc" oldest→newest | "desc" newest→oldest
-const CENTER_ON_FIRST_REVEAL = true;  // Center the card the first time it appears
+/* ===== Tuning ===== */
+const ORDER_DEFAULT = "desc";            // "asc" oldest→newest | "desc" newest→oldest
+const TIME_SLOWNESS_EXP = 4;             // bigger = slower time motion near the top
+const PX_PER_MONTH = 1400;               // page height density (very slow time)
+const ACTIVE_TOP_PX = 200;               // px below header where active cards pin
 
 /* ===== State ===== */
 let entries = [];
@@ -13,7 +14,6 @@ let skills = [];
 let order = ORDER_DEFAULT;
 let minDate, maxDate;
 let lastProgress = 0;
-const revealedOnce = new Set();       // remember which IDs have been revealed at least once
 
 /* ===== Helpers ===== */
 const $  = (s) => document.querySelector(s);
@@ -22,6 +22,7 @@ const parseDate = (s) => (!s ? null : new Date(s.length === 7 ? s + "-01T00:00:0
 const fmt = (d) => d ? d.toLocaleDateString(undefined, { year: "numeric", month: "short" }) : "Present";
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const slowProgress = (p, k = TIME_SLOWNESS_EXP) => Math.pow(p, k);
+const MS_PER_MONTH = 2629800000; // ~30.44 days
 
 function byOrder(a, b) {
   return order === "asc"
@@ -29,13 +30,37 @@ function byOrder(a, b) {
     : parseDate(b.start) - parseDate(a.start);
 }
 
-/* ===== Build timeline (stable DOM order) ===== */
+/* ===== Layout sizing from date span ===== */
+function computeRange() {
+  const today = new Date();
+  const starts = entries.map((e) => parseDate(e.start)).filter(Boolean);
+  const ends   = entries.map((e) => parseDate(e.end) || today);
+  if (!starts.length) {
+    const now = new Date();
+    minDate = new Date(now.getFullYear() - 1, 0, 1);
+    maxDate = new Date(now.getFullYear() + 1, 0, 1);
+    return;
+  }
+  minDate = new Date(Math.min(...starts));
+  maxDate = new Date(Math.max(...ends));
+}
+
+function sizeTimelineByDates() {
+  const months = Math.max(1, (maxDate - minDate) / MS_PER_MONTH);
+  const spanPx = months * PX_PER_MONTH;
+  const minViewport = window.innerHeight * 1.5; // ensure some scroll room
+  const totalHeight = Math.max(spanPx, minViewport);
+  const wrap = $("#timelineWrap");
+  wrap.style.height = `${Math.round(totalHeight)}px`;
+}
+
+/* ===== Build timeline (always-visible) ===== */
 function buildTimeline() {
   const zone = $("#timelineZone");
   zone.innerHTML = "";
   entries.sort(byOrder).forEach((e, i) => {
     const el = document.createElement("article");
-    el.className = "entry";
+    el.className = "entry inactive";
     el.dataset.id    = e.id ?? String(i);
     el.dataset.start = e.start || "";
     el.dataset.end   = e.end   || "";
@@ -45,30 +70,11 @@ function buildTimeline() {
       <p>${e.summary || ""}</p>
       <div class="tags">${(e.tags || []).map((t) => `<span class="tag">${t}</span>`).join("")}</div>
     `;
-    // Keep previously revealed cards visible after rebuild/sort
-    if (revealedOnce.has(el.dataset.id)) el.classList.add("revealed");
     zone.appendChild(el);
   });
 }
 
-/* ===== Range & scroll mapping ===== */
-function computeRange() {
-  const today = new Date();
-  const starts = entries.map((e) => parseDate(e.start)).filter(Boolean);
-  const ends   = entries.map((e) => parseDate(e.end) || today);
-  if (!starts.length) {
-    const now = new Date();
-    minDate = new Date(now.getFullYear() - 5, 0, 1);
-    maxDate = new Date(now.getFullYear() + 1, 0, 1);
-    return;
-  }
-  minDate = new Date(Math.min(...starts));
-  maxDate = new Date(Math.max(...ends));
-  // small visual buffer
-  minDate = new Date(minDate.getFullYear(), minDate.getMonth() - 6, 1);
-  maxDate = new Date(maxDate.getFullYear(), maxDate.getMonth() + 6, 1);
-}
-
+/* ===== Scroll-time mapping ===== */
 function currentDateFromScroll() {
   const wrap = $("#timelineWrap");
   const docH = document.documentElement.clientHeight;
@@ -76,17 +82,15 @@ function currentDateFromScroll() {
   const wrapTop = wrap.offsetTop;
   const wrapBottom = wrapTop + wrap.scrollHeight - docH;
 
-  const progLinear = clamp((pageY - wrapTop) / (wrapBottom - wrapTop), 0, 1);
-  const prog = slowProgress(progLinear);
+  const linear = clamp((pageY - wrapTop) / Math.max(1, (wrapBottom - wrapTop)), 0, 1);
+  const prog = slowProgress(linear); // slow it down nonlinearly
   lastProgress = prog;
 
   const t0 = minDate.getTime();
   const t1 = maxDate.getTime();
-
-  // Map based on selected order
   const t = (order === "asc")
-    ? t0 + prog * (t1 - t0)       // top→bottom = oldest→newest
-    : t1 - prog * (t1 - t0);      // top→bottom = newest→oldest
+    ? t0 + prog * (t1 - t0)      // top→bottom = oldest→newest
+    : t1 - prog * (t1 - t0);     // top→bottom = newest→oldest
 
   return new Date(t);
 }
@@ -98,43 +102,43 @@ function updateRailUI(date, progress) {
   $("#railFill").style.height = (fill * 100).toFixed(1) + "%";
 }
 
-/* ===== First-reveal centering ===== */
-let centerLock = false; // prevent nested scroll loops
-function centerEntryOnce(el) {
-  if (!CENTER_ON_FIRST_REVEAL) return;
-  if (centerLock) return;
-  centerLock = true;
-  // Use instant jump to avoid long smooth scroll loops; adjust if you want smooth
-  el.scrollIntoView({ block: "center", inline: "nearest", behavior: "instant" });
-  // small async release
-  setTimeout(() => { centerLock = false; }, 120);
-}
-
-/* ===== Scroll updates ===== */
-function updateByDate() {
-  const now = currentDateFromScroll();
-  updateRailUI(now, lastProgress);
+/* ===== Active state (lights up + expands + pins) ===== */
+function updateActiveStates(now) {
+  const nowT = now.getTime();
+  const today = new Date();
 
   $$("#timelineZone .entry").forEach((el) => {
-    const id    = el.dataset.id;
     const start = parseDate(el.dataset.start);
+    const end   = parseDate(el.dataset.end) || today;
     if (!start) return;
 
-    // Reveal condition matches the chosen order
-    const shouldReveal = (order === "asc") ? (now >= start) : (now <= start);
+    const active = (order === "asc")
+      ? (nowT >= start.getTime() && nowT < end.getTime())
+      : (nowT <= start.getTime() && nowT > end.getTime()); // symmetric for desc
 
-    if (shouldReveal && !revealedOnce.has(id)) {
-      revealedOnce.add(id);           // mark permanently revealed
-      el.classList.add("revealed");   // make visible (and stays visible forever)
-      centerEntryOnce(el);            // center it the first time it appears
-    } else if (revealedOnce.has(id)) {
-      // Never hide again once revealed
-      el.classList.add("revealed");
+    if (active) {
+      el.classList.add("active");
+      el.classList.remove("inactive");
     } else {
-      // Not yet revealed → keep hidden
-      el.classList.remove("revealed");
+      el.classList.remove("active");
+      el.classList.add("inactive");
     }
   });
+}
+
+/* ===== Tabs ===== */
+function setTab(tab) {
+  const expBtn = $("#tab-experience"), sklBtn = $("#tab-skills");
+  const exp = $("#experience"), skl = $("#skills");
+  if (tab === "experience") {
+    expBtn.classList.add("active");   expBtn.setAttribute("aria-selected","true");
+    sklBtn.classList.remove("active");sklBtn.setAttribute("aria-selected","false");
+    skl.classList.add("hidden");      exp.classList.remove("hidden");
+  } else {
+    sklBtn.classList.add("active");   sklBtn.setAttribute("aria-selected","true");
+    expBtn.classList.remove("active");expBtn.setAttribute("aria-selected","false");
+    exp.classList.add("hidden");      skl.classList.remove("hidden");
+  }
 }
 
 /* ===== Skills ===== */
@@ -146,85 +150,72 @@ function renderSkills() {
     card.className = "skill-card";
     card.innerHTML = `
       <h4>${s.title}</h4>
-      <div class="badges">${(s.items || []).map((x) => `<span class="badge">${x}</span>`).join("")}</div>
-    `;
+      <div class="badges">${(s.items || []).map((x) => `<span class="badge">${x}</span>`).join("")}</div>`;
     grid.appendChild(card);
     setTimeout(() => card.classList.add("show"), 80 * i);
   });
 }
 
-/* ===== Tabs ===== */
-function setTab(tab) {
-  const expBtn = $("#tab-experience");
-  const sklBtn = $("#tab-skills");
-  const exp = $("#experience");
-  const skl = $("#skills");
-
-  if (tab === "experience") {
-    expBtn.classList.add("active");   expBtn.setAttribute("aria-selected", "true");
-    sklBtn.classList.remove("active");sklBtn.setAttribute("aria-selected", "false");
-    skl.classList.add("hidden");      exp.classList.remove("hidden");
-  } else {
-    sklBtn.classList.add("active");   sklBtn.setAttribute("aria-selected", "true");
-    expBtn.classList.remove("active");expBtn.setAttribute("aria-selected", "false");
-    exp.classList.add("hidden");      skl.classList.remove("hidden");
-  }
-}
-
-/* ===== Header height → CSS var (avoid being hidden under header) ===== */
-function setHeaderHeightVar() {
+/* ===== Header height var ===== */
+function setHeaderVars() {
   const h = $("#topbar")?.offsetHeight || 0;
   document.documentElement.style.setProperty("--headerH", `${h}px`);
+  document.documentElement.style.setProperty("--activeTop", `${ACTIVE_TOP_PX}px`);
+}
+
+/* ===== Main update loop ===== */
+function tick() {
+  const now = currentDateFromScroll();
+  updateRailUI(now, lastProgress);
+  updateActiveStates(now);
 }
 
 /* ===== Boot ===== */
 async function boot() {
   $("#year").textContent = new Date().getFullYear();
-  setHeaderHeightVar();
-  window.addEventListener("resize", setHeaderHeightVar);
+  setHeaderVars();
+  window.addEventListener("resize", setHeaderVars);
 
-  try {
-    const [expRes, sklRes] = await Promise.all([
-      fetch(EXPERIENCE_JSON, { cache: "no-store" }),
-      fetch(SKILLS_JSON, { cache: "no-store" })
-    ]);
-    if (!expRes.ok) throw new Error(`Failed to load ${EXPERIENCE_JSON}: ${expRes.status}`);
-    if (!sklRes.ok) throw new Error(`Failed to load ${SKILLS_JSON}: ${sklRes.status}`);
+  const [expRes, sklRes] = await Promise.all([
+    fetch(EXPERIENCE_JSON, { cache: "no-store" }),
+    fetch(SKILLS_JSON, { cache: "no-store" })
+  ]);
+  if (!expRes.ok) throw new Error(`Failed to load ${EXPERIENCE_JSON}: ${expRes.status}`);
+  if (!sklRes.ok) throw new Error(`Failed to load ${SKILLS_JSON}: ${sklRes.status}`);
 
-    const expJson = await expRes.json();
-    const sklJson = await sklRes.json();
+  entries = (await expRes.json()).filter((e) => e && e.start);
+  skills  = await sklRes.json();
 
-    entries = (expJson || []).filter((e) => e && e.start);
-    skills  = sklJson || [];
+  computeRange();
+  sizeTimelineByDates();   // ← height based on date span
+  buildTimeline();
+  renderSkills();
 
-    computeRange();
-    buildTimeline();
-    renderSkills();
-    updateByDate();
+  tick(); // initial
+  window.addEventListener("scroll", tick, { passive: true });
+  window.addEventListener("resize", () => { sizeTimelineByDates(); tick(); });
 
-    window.addEventListener("scroll", updateByDate, { passive: true });
-    window.addEventListener("resize", updateByDate);
+  $("#orderSelect").value = order;
+  $("#orderSelect").addEventListener("change", (e) => {
+    order = e.target.value;
+    buildTimeline();       // keep all entries visible, just reorder
+    tick();                // recompute mapping for new order
+  });
 
-    $("#orderSelect").value = order;
-    $("#orderSelect").addEventListener("change", (e) => {
-      order = e.target.value;
-      buildTimeline();   // keep previously revealed visible
-      updateByDate();    // recompute mapping for new order
-    });
+  $("#tab-experience").addEventListener("click", () => setTab("experience"));
+  $("#tab-skills").addEventListener("click", () => setTab("skills"));
+}
 
-    $("#tab-experience").addEventListener("click", () => setTab("experience"));
-    $("#tab-skills").addEventListener("click", () => setTab("skills"));
-  } catch (err) {
+document.addEventListener("DOMContentLoaded", () => {
+  boot().catch(err => {
     console.error(err);
     const zone = $("#timelineZone");
     zone.innerHTML = `
-      <article class="entry revealed" style="background:#2a2f52;border:1px solid rgba(255,255,255,.2)">
+      <article class="entry" style="background:#2a2f52;border:1px solid rgba(255,255,255,.2)">
         <h3>Couldn’t load your data</h3>
         <p>${String(err)}</p>
         <p style="opacity:.8">Check that <code>/data/experience.json</code> and <code>/data/skills.json</code> exist, are valid JSON, and paths match.</p>
       </article>
     `;
-  }
-}
-
-document.addEventListener("DOMContentLoaded", boot);
+  });
+});
