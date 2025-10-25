@@ -1,12 +1,16 @@
-:root {
+:root{
   --bg:#0f1221;
   --ink:#eef1ff;
   --muted:#b8c0ff;
   --accent:#7c5cff;
   --accent2:#17d1ff;
   --card:#1a1f39;
+
   --radius:16px;
   --shadow:0 10px 24px rgba(0,0,0,.25);
+
+  --headerH: 64px;        /* JS updates this to real topbar height */
+  --activeTop: 200px;     /* active card sticks this far below the top */
 }
 
 *{box-sizing:border-box;margin:0;padding:0}
@@ -52,16 +56,12 @@ select{
 }
 
 /* Timeline rail */
-:root { --headerH: 64px; } /* will be updated by JS to match your real header height */
-
-/* Make room so first revealed card isn’t under the sticky header */
-#timelineWrap {
-  padding-top: calc(20vh + var(--headerH));  /* was just 20vh before */
-  padding-bottom: 20vh;
+#timelineWrap{
+  position:relative;
+  /* height is set dynamically by JS based on date span */
+  padding-top: calc(var(--headerH) + 24px);
+  padding-bottom: 24vh;
 }
-
-/* If we programmatically scroll a card into view, keep it clear of the header */
-.entry { scroll-margin-top: calc(var(--headerH) + 12px); }
 #rail{
   position:fixed;left:50%;transform:translateX(-50%);
   top:0;bottom:0;width:4px;border-radius:999px;
@@ -81,7 +81,7 @@ select{
   color:#fff;padding:6px 12px;border-radius:999px;font-weight:600;font-size:14px;
 }
 
-/* Entries */
+/* Entries (always visible) */
 #timelineZone{position:relative;z-index:2}
 .entry{
   background:var(--card);
@@ -91,10 +91,14 @@ select{
   margin:28px auto;
   padding:18px 20px;
   max-width:720px;
-  opacity:0;transform:translateX(40px);
-  transition:transform .6s cubic-bezier(.2,.8,.2,1),opacity .6s ease;
+
+  transition:
+    transform .35s ease,
+    box-shadow .35s ease,
+    background-color .35s ease,
+    opacity .25s ease;
+  opacity:.9;
 }
-.entry.revealed{opacity:1;transform:translateX(0)}
 .entry h3{margin:.2rem 0 .25rem;font-size:18px}
 .entry .meta{color:var(--muted);font-size:13px;margin-bottom:.4rem}
 .entry .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:.4rem}
@@ -102,6 +106,17 @@ select{
   font-size:12px;padding:3px 8px;border-radius:999px;
   border:1px solid rgba(124,92,255,.45);
   background:rgba(124,92,255,.15);
+}
+
+/* Inactive vs active look */
+.entry.inactive{opacity:.75}
+.entry.active{
+  position: sticky;                 /* pins within normal flow */
+  top: calc(var(--activeTop) + var(--headerH));
+  z-index: 5;
+  transform: scale(1.02);
+  background: linear-gradient(160deg, rgba(124,92,255,.18), rgba(23,209,255,.16));
+  box-shadow: 0 16px 40px rgba(0,0,0,.35);
 }
 
 /* Skills */
