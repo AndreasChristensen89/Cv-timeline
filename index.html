@@ -7,18 +7,18 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
-  <meta name="color-scheme" content="dark light">
+  <meta name="color-scheme" content="dark">
 </head>
 <body>
-  <!-- Sticky top buttons -->
-  <header id="topbar" class="elev-2">
-    <div class="container">
+  <!-- Sticky header with segmented buttons + simple date readout -->
+  <header id="topbar">
+    <div class="container bar">
       <div class="segmented" role="tablist" aria-label="Sections">
         <button id="tab-experience" role="tab" aria-selected="true" class="seg-btn left active">Experience</button>
         <button id="tab-skills" role="tab" aria-selected="false" class="seg-btn right">Skills</button>
       </div>
 
-      <div id="controls">
+      <div class="controls">
         <label class="ctrl">
           Order:
           <select id="orderSelect" aria-label="Sort order">
@@ -26,10 +26,9 @@
             <option value="asc">Oldest → Newest</option>
           </select>
         </label>
-        <label class="ctrl">
-          Date:
-          <output id="cursorOut">—</output>
-        </label>
+
+        <!-- Phone-friendly current month display -->
+        <span id="cursorOut" class="date-badge" aria-live="polite">—</span>
       </div>
     </div>
   </header>
@@ -37,24 +36,16 @@
   <!-- Experience timeline -->
   <main id="experience">
     <div class="container">
-      <div id="timelineWrap">
-        <!-- Central rail + dynamic fill + floating badge -->
-        <div id="rail" aria-hidden="true">
-          <div id="railFill"></div>
-          <div id="dateCursor" class="elev-3">
-            <span id="cursorBadge">Today</span>
-          </div>
-        </div>
+      <!-- Pin line helper (purely visual) -->
+      <div id="pinLine" aria-hidden="true"></div>
 
-        <!-- Stable, always-visible entries -->
-        <section id="timelineZone" aria-label="Experience timeline">
-          <!-- JS inserts cards here -->
-        </section>
+      <div id="timeline" aria-label="Monthly timeline">
+        <!-- JS will generate the month rows here -->
       </div>
     </div>
   </main>
 
-  <!-- Skills -->
+  <!-- Skills (toggle visibility; no extra JS needed beyond simple show/hide) -->
   <section id="skills" class="hidden">
     <div class="container">
       <div id="skillsGrid" class="grid"></div>
@@ -62,9 +53,10 @@
   </section>
 
   <footer class="container">
-    <p>© <span id="year"></span> Andreas Christensen · Built with HTML · CSS · JS</p>
+    <p>© <span id="year"></span> Andreas Christensen · Plain HTML/CSS with a little JS</p>
   </footer>
 
+  <!-- Minimal JS (no fetch, no animations) -->
   <script src="script.js" defer></script>
 </body>
 </html>
