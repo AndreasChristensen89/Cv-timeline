@@ -10,7 +10,7 @@
   <meta name="color-scheme" content="dark">
 </head>
 <body>
-  <!-- Fixed header (always visible) -->
+  <!-- Simple sticky topbar (keeps buttons visible; no dynamic date) -->
   <header id="topbar" role="navigation" aria-label="Top controls">
     <div class="container bar">
       <div class="segmented" role="tablist" aria-label="Sections">
@@ -26,33 +26,24 @@
             <option value="asc">Oldest → Newest</option>
           </select>
         </label>
-
-        <!-- Phone-friendly current month display -->
-        <span id="cursorOut" class="date-badge" aria-live="polite">—</span>
       </div>
     </div>
   </header>
 
-  <!-- Experience timeline -->
-  <main id="experience">
-    <div class="container">
-      <!-- Visual pin line -->
-      <div id="pinLine" aria-hidden="true"></div>
+  <main class="container">
+    <!-- Experience list (plain vertical list) -->
+    <section id="experience" aria-labelledby="tab-experience">
+      <div id="experienceList"></div>
+    </section>
 
-      <!-- Timeline months (200px each), entries are placed inside months -->
-      <div id="timeline" aria-label="Experience timeline"></div>
-    </div>
+    <!-- Skills grid -->
+    <section id="skills" class="hidden" aria-labelledby="tab-skills">
+      <div id="skillsGrid" class="grid"></div>
+    </section>
   </main>
 
-  <!-- Skills (toggle only, same page) -->
-  <section id="skills" class="hidden">
-    <div class="container">
-      <div id="skillsGrid" class="grid"></div>
-    </div>
-  </section>
-
   <footer class="container">
-    <p>© <span id="year"></span> Andreas Christensen · Plain HTML/CSS/JS</p>
+    <p>© <span id="year"></span> Andreas Christensen · HTML · CSS · JS</p>
   </footer>
 
   <script src="script.js" defer></script>
