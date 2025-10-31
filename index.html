@@ -10,8 +10,8 @@
   <meta name="color-scheme" content="dark">
 </head>
 <body>
-  <!-- Sticky header with segmented buttons + simple date readout -->
-  <header id="topbar">
+  <!-- Fixed header (always visible) -->
+  <header id="topbar" role="navigation" aria-label="Top controls">
     <div class="container bar">
       <div class="segmented" role="tablist" aria-label="Sections">
         <button id="tab-experience" role="tab" aria-selected="true" class="seg-btn left active">Experience</button>
@@ -36,16 +36,15 @@
   <!-- Experience timeline -->
   <main id="experience">
     <div class="container">
-      <!-- Pin line helper (purely visual) -->
+      <!-- Visual pin line -->
       <div id="pinLine" aria-hidden="true"></div>
 
-      <div id="timeline" aria-label="Monthly timeline">
-        <!-- JS will generate the month rows here -->
-      </div>
+      <!-- Timeline months (200px each), entries are placed inside months -->
+      <div id="timeline" aria-label="Experience timeline"></div>
     </div>
   </main>
 
-  <!-- Skills (toggle visibility; no extra JS needed beyond simple show/hide) -->
+  <!-- Skills (toggle only, same page) -->
   <section id="skills" class="hidden">
     <div class="container">
       <div id="skillsGrid" class="grid"></div>
@@ -53,10 +52,9 @@
   </section>
 
   <footer class="container">
-    <p>© <span id="year"></span> Andreas Christensen · Plain HTML/CSS with a little JS</p>
+    <p>© <span id="year"></span> Andreas Christensen · Plain HTML/CSS/JS</p>
   </footer>
 
-  <!-- Minimal JS (no fetch, no animations) -->
   <script src="script.js" defer></script>
 </body>
 </html>
