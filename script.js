@@ -1,12 +1,10 @@
-/* ===== Tiny, robust timeline ===== */
-
-/* CONFIG */
-const ORDER_DEFAULT = "desc";      // "desc" = newest→oldest (scroll back in time)
+/* ===== Settings ===== */
+const ORDER_DEFAULT = "desc";      // "desc" = newest→oldest (scroll back in time), "asc" = oldest→newest
 const ANCHOR = "end";              // "end" (recommended) or "start"
-const MONTH_HEIGHT = 200;          // px per month (set in CSS too via --monthH)
-const PIN_OFFSET = 200;            // px under header to pin fixed entry
+const MONTH_HEIGHT = 200;          // must match --monthH in CSS
+const PIN_OFFSET = 200;            // must match --pinOffset in CSS
 
-/* DATA: add/adjust your entries here */
+/* ===== Data (edit this; dates are YYYY-MM) ===== */
 const ENTRIES = [
   { title:"Business Operations Manager (Prospect)", company:"Nextbike", location:"Mulhouse (Remote/Travel)", start:"2025-05", end:null, summary:"SOP rollout · MRE collaboration · e-station installs · QlikSense reporting.", tags:["Operations","SOP","Data"] },
   { title:"Test Engineer (QA)", company:"Sopra Steria (Consultant)", location:"Brussels, BE", start:"2023-09", end:"2025-03", summary:"Mobile/TV streaming QA · test automation & manual testing · Agile · ISTQB.", tags:["QA","Automation","Agile","Streaming"] },
@@ -18,36 +16,33 @@ const ENTRIES = [
   { title:"Mandarin Studies", company:"Fudan University", location:"Shanghai, CN", start:"2013-09", end:"2014-06", summary:"Intensive Chinese; HSK track.", tags:["Mandarin","HSK"] }
 ];
 
-/* ===== Utilities ===== */
+/* ===== Utils ===== */
 const $ = s => document.querySelector(s);
-const monthKey = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+const $$ = s => Array.from(document.querySelectorAll(s));
 const parseMonth = s => {
   if (!s) return null;
   const [y,m] = s.split("-").map(Number);
   return new Date(y, (m||1)-1, 1);
 };
 const addMonths = (d, n) => new Date(d.getFullYear(), d.getMonth()+n, 1);
-const monthsBetween = (a,b) => {
-  const y = b.getFullYear() - a.getFullYear();
-  const m = b.getMonth() - a.getMonth();
-  return y*12 + m;
-};
+const monthsBetween = (a,b) => (b.getFullYear()-a.getFullYear())*12 + (b.getMonth()-a.getMonth());
 const fmtLabel = d => d.toLocaleString(undefined, { year:"numeric", month:"short" });
+const monthKey = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
 
-/* ===== Build months + entries ===== */
+/* ===== State ===== */
 let order = ORDER_DEFAULT;
-let months = []; // array of Date objects, newest→oldest for "desc"
+let months = []; // array of Date objects in render order
 let headerH = 64;
 
+/* ===== Build the month grid based on data span ===== */
 function computeSpan() {
   const today = new Date();
   const starts = ENTRIES.map(e => parseMonth(e.start)).filter(Boolean);
-  const ends = ENTRIES.map(e => e.end ? parseMonth(e.end) : today);
+  const ends   = ENTRIES.map(e => e.end ? parseMonth(e.end) : today);
 
   const minStart = new Date(Math.min(...starts.map(d=>d.getTime())));
   const maxEnd   = new Date(Math.max(...ends.map(d=>d.getTime())));
 
-  // Build month list inclusive between minStart..maxEnd
   const first = new Date(minStart.getFullYear(), minStart.getMonth(), 1);
   const last  = new Date(maxEnd.getFullYear(),   maxEnd.getMonth(),   1);
   const count = monthsBetween(first, last) + 1;
@@ -55,45 +50,43 @@ function computeSpan() {
   const list = [];
   for (let i=0;i<count;i++) list.push(addMonths(first, i));
 
-  months = (order === "desc") ? list.reverse() : list; // newest→oldest or oldest→newest
-
-  // set heights
-  document.documentElement.style.setProperty("--monthH", MONTH_HEIGHT+"px");
+  months = (order === "desc") ? list.reverse() : list;
+  document.documentElement.style.setProperty("--monthH", MONTH_HEIGHT + "px");
 }
 
+/* ===== Header measurements & body padding ===== */
 function setHeaderVars() {
   headerH = $("#topbar")?.offsetHeight || 64;
-  document.documentElement.style.setProperty("--headerH", headerH+"px");
-  document.documentElement.style.setProperty("--pinOffset", PIN_OFFSET+"px");
+  document.documentElement.style.setProperty("--headerH", headerH + "px");
+  document.documentElement.style.setProperty("--pinOffset", PIN_OFFSET + "px");
+  // Ensure body padding matches header height so content never hides under it
+  document.body.style.paddingTop = `var(--headerH)`;
 }
 
+/* ===== Render timeline months and entries ===== */
 function renderTimeline() {
   const timeline = $("#timeline");
   timeline.innerHTML = "";
 
+  // Build month rows (no labels)
   for (const d of months) {
     const row = document.createElement("div");
     row.className = "month";
     row.dataset.month = monthKey(d);
-
-    const label = document.createElement("div");
-    label.className = "month-label";
-    label.textContent = fmtLabel(d);
-
-    row.appendChild(label);
     timeline.appendChild(row);
   }
 
   // Place entries into anchor month rows
   for (const e of ENTRIES) {
-    const anchorDate = ANCHOR === "end" ? (e.end ? parseMonth(e.end) : new Date()) : parseMonth(e.start);
+    const anchorDate = (ANCHOR === "end")
+      ? (e.end ? parseMonth(e.end) : new Date())
+      : parseMonth(e.start);
     const key = monthKey(anchorDate);
     const host = timeline.querySelector(`.month[data-month="${key}"]`) || timeline.firstElementChild;
 
     const card = document.createElement("article");
     card.className = "entry";
     card.dataset.anchor = key;
-
     card.innerHTML = `
       <div class="meta">${(e.start||"")} — ${(e.end||"Present")} · ${e.location||""}</div>
       <h3>${e.title} · ${e.company||""}</h3>
@@ -102,39 +95,50 @@ function renderTimeline() {
     `;
     host.appendChild(card);
   }
-
-  // Months container height is implicit: N * 200px via CSS
 }
 
-/* ===== Scroll logic (super small): one fixed card at a time ===== */
-function updateCursorAndFix() {
-  const y = window.scrollY + headerH + PIN_OFFSET;
+/* ===== Scroll behavior: pick the month row at the pin line, fix one entry ===== */
+function updateOnScroll() {
+  const pinY = window.scrollY + headerH + PIN_OFFSET;
 
-  // Determine which month is currently at/above the pin line
-  const monthRows = Array.from(document.querySelectorAll(".month"));
+  // Find the active month row at/above the pin line
+  const rows = $$(".month");
   let activeRow = null;
-  for (const row of monthRows) {
-    const top = row.offsetTop;
-    if (top <= y) { activeRow = row; break; } // rows are ordered newest→oldest for "desc"
-  }
-  if (!activeRow) activeRow = monthRows[0];
 
-  // Update date badge
-  const d = activeRow.dataset.month.split("-"); // YYYY-MM
-  const labelDate = new Date(Number(d[0]), Number(d[1])-1, 1);
-  $("#cursorOut").textContent = fmtLabel(labelDate);
-
-  // Fix exactly one entry: the last entry inside the active row (most recent within that month)
-  document.querySelectorAll(".entry.fixed").forEach(el => el.classList.remove("fixed"));
-  const entriesInRow = activeRow.querySelectorAll(".entry");
-  if (entriesInRow.length) {
-    // pick last for "desc", first for "asc"
-    const chosen = (order === "desc") ? entriesInRow[entriesInRow.length-1] : entriesInRow[0];
-    chosen.classList.add("fixed");
+  if (order === "desc") {
+    // rows are newest→oldest down the page; choose the last row whose top <= pinY
+    for (const row of rows) {
+      if (row.offsetTop <= pinY) { activeRow = row; }
+      else break;
+    }
+    if (!activeRow) activeRow = rows[0];
+  } else {
+    // asc: rows oldest→newest; choose the last row whose top <= pinY
+    for (const row of rows) {
+      if (row.offsetTop <= pinY) { activeRow = row; }
+      else break;
+    }
+    if (!activeRow) activeRow = rows[0];
   }
+
+  // Update header date badge
+  const [yy,mm] = activeRow.dataset.month.split("-").map(Number);
+  $("#cursorOut").textContent = fmtLabel(new Date(yy, mm-1, 1));
+
+  // Fix exactly one entry from the active row (most representative)
+  // For desc: choose the last card in that month; for asc: choose the first.
+  const cards = activeRow.querySelectorAll(".entry");
+  let chosen = null;
+  if (cards.length) {
+    chosen = (order === "desc") ? cards[cards.length - 1] : cards[0];
+  }
+
+  // Clear previous fixed card, set new one
+  $$(".entry.fixed").forEach(el => el.classList.remove("fixed"));
+  if (chosen) chosen.classList.add("fixed");
 }
 
-/* ===== Tabs: toggle sections only ===== */
+/* ===== Tabs & Skills (simple toggle) ===== */
 function setTab(tab) {
   const exp = $("#experience"), skl = $("#skills");
   const bExp = $("#tab-experience"), bSkl = $("#tab-skills");
@@ -146,8 +150,6 @@ function setTab(tab) {
     bSkl.classList.add("active"); bExp.classList.remove("active");
   }
 }
-
-/* ===== Simple skills (static demo, edit as you like) ===== */
 function renderSkills() {
   const SKILLS = [
     { title:"Languages", items:["English (C2)","French (B2)","Mandarin (HSK3–4)","Danish (Native)"] },
@@ -172,21 +174,21 @@ function boot(){
   renderTimeline();
   renderSkills();
 
-  updateCursorAndFix();
-  window.addEventListener("scroll", updateCursorAndFix, {passive:true});
-  window.addEventListener("resize", ()=>{ setHeaderVars(); updateCursorAndFix(); });
+  updateOnScroll();
+  window.addEventListener("scroll", updateOnScroll, {passive:true});
+  window.addEventListener("resize", () => { setHeaderVars(); updateOnScroll(); });
 
-  // Order toggle simply reverses the month list and rerenders
+  // Order switch: rebuild months & entries in the other direction
   $("#orderSelect").value = ORDER_DEFAULT;
-  $("#orderSelect").addEventListener("change", e=>{
+  $("#orderSelect").addEventListener("change", e => {
     order = e.target.value;
     computeSpan();
     renderTimeline();
-    updateCursorAndFix();
+    updateOnScroll();
   });
 
-  $("#tab-experience").addEventListener("click", ()=> setTab("experience"));
-  $("#tab-skills").addEventListener("click",     ()=> setTab("skills"));
+  $("#tab-experience").addEventListener("click", () => setTab("experience"));
+  $("#tab-skills").addEventListener("click",     () => setTab("skills"));
 }
 
 document.addEventListener("DOMContentLoaded", boot);
